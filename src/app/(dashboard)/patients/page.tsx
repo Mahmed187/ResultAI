@@ -68,7 +68,7 @@ export default function PatientsPage() {
  
       <div className="bg-card rounded-lg shadow">
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="bg-white">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[150px]">NHS Number</TableHead>
@@ -78,7 +78,7 @@ export default function PatientsPage() {
                 <TableHead className="w-[100px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="bg-white">
               {filteredPatients.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">

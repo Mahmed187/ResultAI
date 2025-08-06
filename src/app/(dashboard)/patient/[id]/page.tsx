@@ -60,6 +60,17 @@ const fetchPatient = async (id: string): Promise<Patient> => {
   return res.json();
 };
 
+function formatToDayMonthYear(dateInput: string | Date): string {
+  const date = new Date(dateInput);
+  const options: Intl.DateTimeFormatOptions = {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  };
+  return date.toLocaleDateString("en-US", options);
+}
+
+
 export default function PatientDetailsPage() {
   const params = useParams();
   // const [patient, setPatient] = useState<Patient | null>(null);
@@ -295,9 +306,12 @@ export default function PatientDetailsPage() {
       <Card key={test.id}>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>
-              {test.testName} – {new Date(test.analyzedAt).toLocaleDateString()}
+            <div>
+              <CardTitle>
+              {test.testName}
             </CardTitle>
+            <p className='text-sm font-medium text-gray-500 mt-1'>Analyse at {formatToDayMonthYear(test.analyzedAt as string)}</p>
+            </div>
             <div
               className={`text-xs px-3 py-1 rounded-full font-medium ${
                 test.status === "NORMAL"

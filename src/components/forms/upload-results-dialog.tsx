@@ -13,8 +13,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { usePdfUpload } from "@/hooks/usePdfUpload"
-import { FileUp } from "lucide-react"
+import { FileUp, Sparkle } from "lucide-react"
 import { toast } from "sonner"
+import Link from "next/link"
 
 interface UploadResultsDialogProps {
   trigger?: React.ReactNode
@@ -76,57 +77,63 @@ export function UploadResultsDialog({ trigger, patientId }: UploadResultsDialogP
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          onClick={() => setIsOpen(true)}
+    <Link href={"/result-ai"}  
+          className="bg-purple-500 px-4 py-2.5 flex items-center text-white font-semibold rounded-lg shadow hover:bg-purple-600 hover:text-white"
         >
-          <FileUp className="mr-2 h-5 w-5" />
-          Upload File
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Upload Medical Report</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="file">Select PDF File</Label>
-            <Input
-              id="file"
-              type="file"
-              accept=".pdf"
-              onChange={handleFileChange}
-              disabled={isUploading}
-            />
-            {file && (
-              <p className="text-sm text-muted-foreground">
-                Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-              </p>
-            )}
-          </div>
-          {isUploading && (
-            <div className="space-y-2">
-              <Progress value={uploadProgress.progress} />
-              <p className="text-sm text-muted-foreground">
-                {uploadProgress.stage === 'validating' && 'Validating file...'}
-                {uploadProgress.stage === 'extracting' && 'Extracting file...'}
-                {uploadProgress.stage === 'analyzing' && 'Analyzing results...'}
-                {uploadProgress.stage === 'complete' && 'Upload complete!'}
-                {uploadProgress.stage === 'error' && 'Upload failed'}
-              </p>
-            </div>
-          )}
-          <Button 
-            onClick={handleUpload} 
-            disabled={!file || isUploading}
-            className="w-full"
-          >
-            {isUploading ? 'Uploading...' : 'Upload & Analyze'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          <Sparkle className="mr-2 h-5 w-5" />
+         Try ResultAI
+        </Link>
+    // <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+    //   <DialogTrigger asChild>
+    //     <Button 
+    //       variant="outline" 
+    //       onClick={() => setIsOpen(true)}
+    //     >
+    //       <FileUp className="mr-2 h-5 w-5" />
+    //      Try ResultAI
+    //     </Button>
+    //   </DialogTrigger>
+    //   <DialogContent className="sm:max-w-[425px]">
+    //     <DialogHeader>
+    //       <DialogTitle>Upload Medical Report</DialogTitle>
+    //     </DialogHeader>
+    //     <div className="grid gap-4 py-4">
+    //       <div className="grid gap-2">
+    //         <Label htmlFor="file">Select PDF File</Label>
+    //         <Input
+    //           id="file"
+    //           type="file"
+    //           accept=".pdf"
+    //           onChange={handleFileChange}
+    //           disabled={isUploading}
+    //         />
+    //         {file && (
+    //           <p className="text-sm text-muted-foreground">
+    //             Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+    //           </p>
+    //         )}
+    //       </div>
+    //       {isUploading && (
+    //         <div className="space-y-2">
+    //           <Progress value={uploadProgress.progress} />
+    //           <p className="text-sm text-muted-foreground">
+    //             {uploadProgress.stage === 'validating' && 'Validating file...'}
+    //             {uploadProgress.stage === 'extracting' && 'Extracting file...'}
+    //             {uploadProgress.stage === 'analyzing' && 'Analyzing results...'}
+    //             {uploadProgress.stage === 'complete' && 'Upload complete!'}
+    //             {uploadProgress.stage === 'error' && 'Upload failed'}
+    //           </p>
+    //         </div>
+    //       )}
+    //       <Button 
+    //         onClick={handleUpload} 
+    //         disabled={!file || isUploading}
+    //         className="w-full"
+    //       >
+    //         {isUploading ? 'Uploading...' : 'Upload & Analyze'}
+    //       </Button>
+    //     </div>
+    //   </DialogContent>
+    // </Dialog>
   )
 } 

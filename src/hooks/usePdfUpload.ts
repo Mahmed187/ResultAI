@@ -1,117 +1,3 @@
-// import { useRouter, usePathname } from 'next/navigation'
-// import { useState } from 'react'
-// import { useQueryClient } from '@tanstack/react-query'
-
-// interface UploadProgress {
-//   stage: 'idle' | 'validating' | 'uploading' | 'analyzing' | 'complete' | 'error'
-//   progress: number
-// }
-
-// interface UploadResult {
-//   success: boolean
-//   error?: string
-//   data?: any
-// }
-
-// export function usePdfUpload() {
-//   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
-//     stage: 'idle',
-//     progress: 0,
-//   })
-//   const [isUploading, setIsUploading] = useState(false)
-//   const router = useRouter()
-//   const pathname = usePathname()
-//   const queryClient = useQueryClient()
-
-//   const uploadPdf = async (file: File): Promise<UploadResult> => {
-//     setIsUploading(true)
-//     setUploadProgress({ stage: 'validating', progress: 0 })
-
-//     try {
-//       // Step 1: Extract PDF text and get sample ID
-//       const formData = new FormData()
-//       formData.append('pdf', file)
-      
-//       setUploadProgress({ stage: 'uploading', progress: 30 })
-
-//       const pdfTextResponse = await fetch('/api/extract-pdf-text', {
-//         method: 'POST',
-//         body: formData,
-//       })
-
-//       if (!pdfTextResponse.ok) {
-//         const errorData = await pdfTextResponse.json()
-//         throw new Error(errorData.error || 'Failed to extract PDF text')
-//       }
-
-//       // Parse the response to get the sample ID
-//       const pdfTextResult = await pdfTextResponse.json()
-//       const sampleId = pdfTextResult.parsedData?.patientDetails?.sampleId
-
-//       setUploadProgress({ stage: 'analyzing', progress: 60 })
-
-//       // Step 2: Send to report analyzer with sample ID
-//       const analyzerFormData = new FormData()
-//       analyzerFormData.append('pdf', file)
-      
-//       // Add sample ID to the form data if available
-//       if (sampleId) {
-//         analyzerFormData.append('sampleId', sampleId)
-//       }
-
-//       // Optionally, you can also send the parsed data from the first call
-//       // analyzerFormData.append('parsedData', JSON.stringify(pdfTextResult.parsedData))
-
-//       const analyzerResponse = await fetch('/api/report-analizer', {
-//         method: 'POST',
-//         body: analyzerFormData,
-//       })
-
-//       if (!analyzerResponse.ok) {
-//         const errorData = await analyzerResponse.json()
-//         throw new Error(errorData.error || 'Failed to analyze file')
-//       }
-
-//       const analyzerResult = await analyzerResponse.json()
-
-//       setUploadProgress({ stage: 'complete', progress: 100 })
-
-//       // Invalidate patient data query if applicable
-//       queryClient.invalidateQueries({ queryKey: ['patients'] })
-
-//       if (pathname !== '/patients') {
-//         router.push('/patients')
-//       } else {
-//         router.refresh()
-//       }
-
-//       return {
-//         success: true,
-//         data: {
-//           ...analyzerResult.data,
-//           sampleId, // Include sample ID in the returned data
-//           extractedData: pdfTextResult.parsedData, // Include the parsed PDF data
-//         },
-//       }
-//     } catch (error) {
-//       console.error('Upload error:', error)
-//       setUploadProgress({ stage: 'error', progress: 0 })
-//       return {
-//         success: false,
-//         error: error instanceof Error ? error.message : 'An unknown error occurred',
-//       }
-//     } finally {
-//       setIsUploading(false)
-//     }
-//   }
-
-//   return {
-//     uploadPdf,
-//     uploadProgress,
-//     isUploading,
-//   }
-// }
-
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -280,12 +166,12 @@ export function usePdfUpload() {
       queryClient.invalidateQueries({ queryKey: ['patient', patientDetails.nhsNumber] })
 
       // Navigate to patients page if not already there
-      if (pathname !== '/patients') {
-        console.log('🔄 Redirecting to patients page...')
-        router.push('/patients')
-      } else {
-        router.refresh()
-      }
+      // if (pathname !== '/patients') {
+      //   console.log('🔄 Redirecting to patients page...')
+      //   router.push('/patients')
+      // } else {
+      //   router.refresh()
+      // }
 
       return {
         success: true,
