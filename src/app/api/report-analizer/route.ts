@@ -1,7 +1,7 @@
  
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';  
 
 // TypeScript interfaces
 interface PatientDetails {
@@ -21,6 +21,7 @@ interface TestResult {
 }
 
 interface ParsedAnalysis {
+  sampleId: string
   patientDetails: PatientDetails;
   testResults: TestResult[];
   doctorsLetter: string;
@@ -49,6 +50,26 @@ const openai = new OpenAI({
 });
 
 const ANALYSIS_TIMEOUT = 60000;
+
+// -------------------------------
+ 
+// NEW: Function to check if sample already exists
+async function checkSampleExistsCount(sampleId: string): Promise<boolean> {
+  console.log(`🔍 Checking if sample ${sampleId} already exists...`);
+  
+  const existingCount = await prisma.testResult.count({
+    where: { sampleId: sampleId }
+  });
+
+  if (existingCount > 0) {
+    console.log(`✅ Sample ${sampleId} already exists with ${existingCount} test results`);
+    return true;
+  }
+
+  console.log(`✅ Sample ${sampleId} not found, can proceed with analysis`);
+  return false;
+}
+
 
 // Utility: Parse date from various formats
 function parseDate(dateStr: string): Date {
@@ -175,72 +196,134 @@ async function handleLetter(patient: any, doctorsLetter: string) {
 /**
  * Handle test results with duplicate prevention and session tracking
  */
-async function handleTestResults(patient: any, testResults: TestResult[]) {
-  console.log(`🔬 Handling ${testResults.length} test results for patient: ${patient.nhsNumber}`);
-  console.log(`🔬 Test names to process: ${testResults.map(t => t.testName).join(', ')}`);
+// async function handleTestResults(patient: any, testResults: TestResult[]) {
+//   console.log(`🔬 Handling ${testResults.length} test results for patient: ${patient.nhsNumber}`);
+//   console.log(`🔬 Test names to process: ${testResults.map(t => t.testName).join(', ')}`);
   
-  // Current analysis timestamp (to the millisecond for uniqueness)
+//   // Current analysis timestamp (to the millisecond for uniqueness)
+//   const currentAnalyzedAt = new Date();
+  
+//   // With the new schema constraint @@unique([patientId, testName, analyzedAt]), 
+//   // we can have multiple tests with same name, just not at the exact same time
+  
+//   // Check if this exact analysis session already exists
+//   const existingSessionResults = await prisma.testResult.findMany({
+//     where: {
+//       patientId: patient.id,
+//       analyzedAt: currentAnalyzedAt
+//     }
+//   });
+
+//   if (existingSessionResults.length > 0) {
+//     console.log("🔬 This exact analysis session already exists, returning existing results");
+//     return { testResults: existingSessionResults, newTestResultsCount: 0 };
+//   }
+
+//   // Check for very recent results (within 1 second) to handle rapid API calls
+//   const oneSecondAgo = new Date(currentAnalyzedAt.getTime() - 1000);
+//   const recentResults = await prisma.testResult.findMany({
+//     where: {
+//       patientId: patient.id,
+//       analyzedAt: {
+//         gte: oneSecondAgo
+//       }
+//     },
+//     select: {
+//       testName: true,
+//       analyzedAt: true,
+//       value: true,
+//       unit: true
+//     }
+//   });
+
+//   // Only filter out results that are EXACTLY the same (same test, value, unit, within 1 second)
+//   const filteredTestResults = testResults.filter(newTest => {
+//     const isExactDuplicate = recentResults.some(existing => 
+//       existing.testName === newTest.testName &&
+//       existing.value === newTest.value &&
+//       existing.unit === (newTest.unit || null) &&
+//       Math.abs(existing.analyzedAt.getTime() - currentAnalyzedAt.getTime()) < 1000
+//     );
+    
+//     if (isExactDuplicate) {
+//       console.log(`🔬 Skipping exact duplicate: ${newTest.testName} = ${newTest.value}${newTest.unit || ''}`);
+//     }
+    
+//     return !isExactDuplicate;
+//   });
+
+//   console.log(`🔬 After duplicate filtering: ${filteredTestResults.length} test results to insert`);
+
+//   if (filteredTestResults.length === 0) {
+//     console.log("🔬 All test results are exact duplicates, returning recent results");
+//     return { testResults: recentResults, newTestResultsCount: 0 };
+//   }
+
+//   // Prepare test results data for batch insertion
+//   const testResultsData = filteredTestResults.map(test => ({
+//     patientId: patient.id,
+//     testName: test.testName,
+//     value: test.value,
+//     unit: test.unit || null,
+//     referenceRange: test.referenceRange,
+//     status: mapTestStatus(test.status),
+//     meaning: test.meaning,
+//     analyzedAt: currentAnalyzedAt,
+//   }));
+
+//   console.log(`🔬 Inserting test results: ${testResultsData.map(t => `${t.testName}=${t.value}${t.unit || ''}`).join(', ')}`);
+
+//   try {
+//     // Batch insert new test results
+//     await prisma.testResult.createMany({
+//       data: testResultsData,
+//     });
+
+//     console.log(`🔬 Successfully inserted ${testResultsData.length} new test results`);
+//   } catch (error: any) {
+//     // Handle potential unique constraint violations gracefully
+//     if (error.code === 'P2002') {
+//       console.warn("⚠️ Some test results already exist, fetching existing ones");
+      
+//       // If there's a constraint violation, fetch existing results for this session
+//       const existingResults = await prisma.testResult.findMany({
+//         where: {
+//           patientId: patient.id,
+//           analyzedAt: currentAnalyzedAt
+//         },
+//         orderBy: { testName: 'asc' }
+//       });
+      
+//       return { testResults: existingResults, newTestResultsCount: 0 };
+//     } else {
+//       throw error; // Re-throw if it's not a unique constraint error
+//     }
+//   }
+
+//   // Fetch the newly created test results
+//   const newTestResults = await prisma.testResult.findMany({
+//     where: {
+//       patientId: patient.id,
+//       analyzedAt: currentAnalyzedAt
+//     },
+//     orderBy: { testName: 'asc' }
+//   });
+
+//   console.log(`🔬 Successfully inserted ${newTestResults.length} new test results`);
+//   console.log(`🔬 Inserted test names: ${newTestResults.map(t => t.testName).join(', ')}`);
+  
+//   return { testResults: newTestResults, newTestResultsCount: newTestResults.length };
+// }
+
+async function handleTestResults(patient: any, testResults: TestResult[], sampleId: string) {
+  console.log(`🔬 Handling ${testResults.length} test results for sample: ${sampleId}`);
+
   const currentAnalyzedAt = new Date();
   
-  // With the new schema constraint @@unique([patientId, testName, analyzedAt]), 
-  // we can have multiple tests with same name, just not at the exact same time
-  
-  // Check if this exact analysis session already exists
-  const existingSessionResults = await prisma.testResult.findMany({
-    where: {
-      patientId: patient.id,
-      analyzedAt: currentAnalyzedAt
-    }
-  });
-
-  if (existingSessionResults.length > 0) {
-    console.log("🔬 This exact analysis session already exists, returning existing results");
-    return { testResults: existingSessionResults, newTestResultsCount: 0 };
-  }
-
-  // Check for very recent results (within 1 second) to handle rapid API calls
-  const oneSecondAgo = new Date(currentAnalyzedAt.getTime() - 1000);
-  const recentResults = await prisma.testResult.findMany({
-    where: {
-      patientId: patient.id,
-      analyzedAt: {
-        gte: oneSecondAgo
-      }
-    },
-    select: {
-      testName: true,
-      analyzedAt: true,
-      value: true,
-      unit: true
-    }
-  });
-
-  // Only filter out results that are EXACTLY the same (same test, value, unit, within 1 second)
-  const filteredTestResults = testResults.filter(newTest => {
-    const isExactDuplicate = recentResults.some(existing => 
-      existing.testName === newTest.testName &&
-      existing.value === newTest.value &&
-      existing.unit === (newTest.unit || null) &&
-      Math.abs(existing.analyzedAt.getTime() - currentAnalyzedAt.getTime()) < 1000
-    );
-    
-    if (isExactDuplicate) {
-      console.log(`🔬 Skipping exact duplicate: ${newTest.testName} = ${newTest.value}${newTest.unit || ''}`);
-    }
-    
-    return !isExactDuplicate;
-  });
-
-  console.log(`🔬 After duplicate filtering: ${filteredTestResults.length} test results to insert`);
-
-  if (filteredTestResults.length === 0) {
-    console.log("🔬 All test results are exact duplicates, returning recent results");
-    return { testResults: recentResults, newTestResultsCount: 0 };
-  }
-
-  // Prepare test results data for batch insertion
-  const testResultsData = filteredTestResults.map(test => ({
+  // Prepare test results data with sample ID
+  const testResultsData = testResults.map(test => ({
     patientId: patient.id,
+    sampleId: sampleId,
     testName: test.testName,
     value: test.value,
     unit: test.unit || null,
@@ -250,54 +333,32 @@ async function handleTestResults(patient: any, testResults: TestResult[]) {
     analyzedAt: currentAnalyzedAt,
   }));
 
-  console.log(`🔬 Inserting test results: ${testResultsData.map(t => `${t.testName}=${t.value}${t.unit || ''}`).join(', ')}`);
+  console.log(`🔬 Inserting test results for sample: ${sampleId}`);
+  console.log(`🔬 Test results to insert: ${testResultsData.map(t => `${t.testName}=${t.value}${t.unit || ''}`).join(', ')}`);
 
-  try {
-    // Batch insert new test results
-    await prisma.testResult.createMany({
-      data: testResultsData,
-    });
+  // Since we already checked sample doesn't exist, this should always succeed
+  await prisma.testResult.createMany({
+    data: testResultsData,
+  });
 
-    console.log(`🔬 Successfully inserted ${testResultsData.length} new test results`);
-  } catch (error: any) {
-    // Handle potential unique constraint violations gracefully
-    if (error.code === 'P2002') {
-      console.warn("⚠️ Some test results already exist, fetching existing ones");
-      
-      // If there's a constraint violation, fetch existing results for this session
-      const existingResults = await prisma.testResult.findMany({
-        where: {
-          patientId: patient.id,
-          analyzedAt: currentAnalyzedAt
-        },
-        orderBy: { testName: 'asc' }
-      });
-      
-      return { testResults: existingResults, newTestResultsCount: 0 };
-    } else {
-      throw error; // Re-throw if it's not a unique constraint error
-    }
-  }
+  console.log(`🔬 Successfully inserted ${testResultsData.length} new test results`);
 
   // Fetch the newly created test results
   const newTestResults = await prisma.testResult.findMany({
     where: {
-      patientId: patient.id,
-      analyzedAt: currentAnalyzedAt
+      sampleId: sampleId
     },
     orderBy: { testName: 'asc' }
   });
 
-  console.log(`🔬 Successfully inserted ${newTestResults.length} new test results`);
-  console.log(`🔬 Inserted test names: ${newTestResults.map(t => t.testName).join(', ')}`);
-  
+  console.log(`🔬 Successfully created and fetched ${newTestResults.length} test results`);
   return { testResults: newTestResults, newTestResultsCount: newTestResults.length };
 }
 
 /**
  * Main database operations orchestrator
  */
-async function saveToDatabase(parsed: ParsedAnalysis) {
+async function saveToDatabase(parsed: ParsedAnalysis, sampleId:string) {
   console.log("💾 Starting database operations...");
   
   // Step 1: Handle patient (check/create by NHS number)
@@ -307,7 +368,7 @@ async function saveToDatabase(parsed: ParsedAnalysis) {
   const { letter, isNewLetter } = await handleLetter(patient, parsed.doctorsLetter);
   
   // Step 3: Handle test results (with duplicate prevention and session tracking)
-  const { testResults, newTestResultsCount } = await handleTestResults(patient, parsed.testResults);
+  const { testResults, newTestResultsCount } = await handleTestResults(patient, parsed.testResults, sampleId);
   
   console.log("💾 Database operations completed successfully");
   
@@ -330,6 +391,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
   try {
     // Validate request
     const formData = await request.formData();
+    const sampleId = formData.get('sampleId') as string
     const file = formData.get('pdf') as File;
 
     if (!file) {
@@ -354,6 +416,21 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     }
 
     console.log(`📄 Processing file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+
+ 
+
+    // NEW: Step 2 - Check if sample already exists
+    const sampleExists = await checkSampleExistsCount(sampleId);
+    if (sampleExists) {
+      return NextResponse.json({
+        success: false,
+        error: `Sample ${sampleId} has already been analyzed. Duplicate analysis is not allowed.`
+      }, { status: 409 }); // 409 Conflict status code
+    }
+
+    // Step 3 - Proceed with full analysis since sample is new
+    console.log(`✅ Sample ${sampleId} is new, proceeding with full analysis...`);
+
 
     // Prepare file for OpenAI
     const arrayBuffer = await file.arrayBuffer();
@@ -588,7 +665,7 @@ Requirements:
     console.log(`🔍 Test results found: ${parsed.testResults.map(t => t.testName).join(', ')}`);
 
     // Database operations using the new modular approach
-    const result = await saveToDatabase(parsed);
+    const result = await saveToDatabase(parsed, sampleId);
 
     // Cleanup OpenAI resources
     try {

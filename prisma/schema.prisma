@@ -38,10 +38,13 @@ model Letter {
   @@map("letters")
 }
 
-// Individual test results with timestamps - UPDATED TO ALLOW MULTIPLE REPORTS
+// Individual test results with timestamps - UPDATED WITH SAMPLE ID
+
+// Individual test results with timestamps - FIXED SCHEMA
 model TestResult {
   id             String   @id @default(uuid())
   patientId      String   @map("patient_id")   
+  sampleId       String   @map("sample_id")
   testName       String   @map("test_name")
   value          String
   unit           String?
@@ -53,14 +56,16 @@ model TestResult {
 
   // Relationships
   patient  Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-     
-  // UPDATED: Allow multiple tests per patient, prevent only exact duplicates in same session
-  @@unique([patientId, testName, analyzedAt]) // Unique per patient + test + analysis time
-  @@index([patientId]) // Query optimization
-  @@index([patientId, analyzedAt]) // Query by patient and date
-  @@index([patientId, testName]) // Query by patient and test name
+
+  // Indexes for query optimization (keep these!)
+  @@index([patientId])
+  @@index([sampleId])
+  @@index([patientId, analyzedAt])
+  @@index([patientId, testName])
+
   @@map("test_results")
 }
+
 
 // Enums for type safety
 enum TestStatus {

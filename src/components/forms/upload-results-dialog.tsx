@@ -49,6 +49,7 @@ export function UploadResultsDialog({ trigger, patientId }: UploadResultsDialogP
 
     try {
       const result = await uploadPdf(file)
+
       if (result.success) {
         toast.success('Results uploaded and analyzed successfully')
         setFile(null)
@@ -110,7 +111,7 @@ export function UploadResultsDialog({ trigger, patientId }: UploadResultsDialogP
               <Progress value={uploadProgress.progress} />
               <p className="text-sm text-muted-foreground">
                 {uploadProgress.stage === 'validating' && 'Validating file...'}
-                {uploadProgress.stage === 'uploading' && 'Uploading file...'}
+                {uploadProgress.stage === 'extracting' && 'Extracting file...'}
                 {uploadProgress.stage === 'analyzing' && 'Analyzing results...'}
                 {uploadProgress.stage === 'complete' && 'Upload complete!'}
                 {uploadProgress.stage === 'error' && 'Upload failed'}

@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { PageHeaderContext, useAutoPageTitle } from '@/hooks/use-page-header'
+import { ToastProvider } from '@/components/layout/toast-provider'
 
 // Move QueryClient outside component to prevent recreation on every render
 const queryClient = new QueryClient({
@@ -64,6 +65,7 @@ export default function DashboardLayout({
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ToastProvider>
       <ThemeProvider defaultTheme='light' storageKey='resultai-theme'>
         <PageHeaderContext.Provider value={{ title, setTitle, headerContent, setHeaderContent }}>
           <AutoPageTitleHandler />
@@ -91,6 +93,7 @@ export default function DashboardLayout({
           </SidebarProvider>
         </PageHeaderContext.Provider>
       </ThemeProvider>
+      </ToastProvider>
     </QueryClientProvider>
   )
 } 

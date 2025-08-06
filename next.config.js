@@ -2,6 +2,16 @@
 const nextConfig = {
   experimental: {
     optimizePackageImports: ['@tabler/icons-react', 'lucide-react'],
+     serverComponentsExternalPackages: ['pdf2json']
+  }, 
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        canvas: false,
+      };
+    }
+    return config;
   },
   images: {
     remotePatterns: [
